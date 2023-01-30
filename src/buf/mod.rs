@@ -2,21 +2,28 @@
 //!
 //! `io-uring` APIs require passing ownership of buffers to the runtime. The
 //! crate defines [`IoBuf`] and [`IoBufMut`] traits which are implemented by buffer
-//! types that respect the `io-uring` contract.
+//! types that respect the `io-uring` contract. In addition the [`IoBufFixedMut`] trait
+//! can represent a buffer which has been registered with the `tokio-uring` runtime.
 
 pub mod fixed;
 
 mod io_buf;
 pub use io_buf::IoBuf;
 
+mod io_buf_fixed;
+pub use io_buf_fixed::IoBufFixed;
+
 mod io_buf_mut;
 pub use io_buf_mut::IoBufMut;
+
+mod io_buf_fixed_mut;
+pub use io_buf_fixed_mut::IoBufFixedMut;
 
 mod slice;
 pub use slice::Slice;
 
 mod bounded;
-pub use bounded::{BoundedBuf, BoundedBufMut};
+pub use bounded::{BoundedBuf, BoundedBufFixed, BoundedBufFixedMut, BoundedBufMut};
 
 pub(crate) fn deref(buf: &impl IoBuf) -> &[u8] {
     // Safety: the `IoBuf` trait is marked as unsafe and is expected to be

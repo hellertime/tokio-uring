@@ -1,7 +1,7 @@
+use crate::buf::IoBufFixed;
 use crate::runtime::driver::op::Op;
 use crate::{
-    buf::fixed::FixedBuf,
-    buf::{BoundedBuf, BoundedBufMut, IoBuf, Slice},
+    buf::{BoundedBuf, BoundedBufFixed, BoundedBufFixedMut, BoundedBufMut, IoBuf, Slice},
     io::SharedFd,
 };
 use std::{
@@ -80,27 +80,27 @@ impl Socket {
         (Ok(()), buf.into_inner())
     }
 
-    pub(crate) async fn write_fixed<T>(&self, buf: T) -> crate::BufResult<usize, T>
-    where
-        T: BoundedBuf<Buf = FixedBuf>,
-    {
+    pub(crate) async fn write_fixed<T: BoundedBufFixed>(
+        &self,
+        buf: T,
+    ) -> crate::BufResult<usize, T> {
         let op = Op::write_fixed_at(&self.fd, buf, 0).unwrap();
         op.await
     }
 
-    pub(crate) async fn write_fixed_all<T>(&self, buf: T) -> crate::BufResult<(), T>
-    where
-        T: BoundedBuf<Buf = FixedBuf>,
-    {
+    pub(crate) async fn write_fixed_all<T: BoundedBufFixed>(
+        &self,
+        buf: T,
+    ) -> crate::BufResult<(), T> {
         let orig_bounds = buf.bounds();
         let (res, buf) = self.write_fixed_all_slice(buf.slice_full()).await;
         (res, T::from_buf_bounds(buf, orig_bounds))
     }
 
-    async fn write_fixed_all_slice(
+    async fn write_fixed_all_slice<T: IoBufFixed>(
         &self,
-        mut buf: Slice<FixedBuf>,
-    ) -> crate::BufResult<(), FixedBuf> {
+        mut buf: Slice<T>,
+    ) -> crate::BufResult<(), T> {
         while buf.bytes_init() != 0 {
             let res = self.write_fixed(buf).await;
             match res {
@@ -162,10 +162,10 @@ impl Socket {
         op.await
     }
 
-    pub(crate) async fn read_fixed<T>(&self, buf: T) -> crate::BufResult<usize, T>
-    where
-        T: BoundedBufMut<BufMut = FixedBuf>,
-    {
+    pub(crate) async fn read_fixed<T: BoundedBufFixedMut>(
+        &self,
+        buf: T,
+    ) -> crate::BufResult<usize, T> {
         let op = Op::read_fixed_at(&self.fd, buf, 0).unwrap();
         op.await
     }

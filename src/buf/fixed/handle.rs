@@ -1,5 +1,5 @@
 use super::FixedBuffers;
-use crate::buf::{IoBuf, IoBufMut};
+use crate::buf::{IoBuf, IoBufFixed, IoBufFixedMut, IoBufMut};
 
 use libc::iovec;
 use std::cell::RefCell;
@@ -55,11 +55,6 @@ impl FixedBuf {
     pub(super) unsafe fn new(registry: Rc<RefCell<dyn FixedBuffers>>, buf: CheckedOutBuf) -> Self {
         FixedBuf { registry, buf }
     }
-
-    /// Index of the underlying registry buffer
-    pub fn buf_index(&self) -> u16 {
-        self.buf.index
-    }
 }
 
 unsafe impl IoBuf for FixedBuf {
@@ -85,6 +80,22 @@ unsafe impl IoBufMut for FixedBuf {
         if self.buf.init_len < pos {
             self.buf.init_len = pos
         }
+    }
+}
+
+unsafe impl IoBufFixed for FixedBuf {
+    fn buf_index(&self) -> u16 {
+        self.buf.index
+    }
+}
+
+unsafe impl IoBufFixedMut for FixedBuf {
+    unsafe fn set_buf_index(&mut self, _index: u16) {
+        unimplemented!("cannot alter the index of a FixedBuf");
+    }
+
+    fn buf_index(&self) -> u16 {
+        IoBufFixed::buf_index(self)
     }
 }
 

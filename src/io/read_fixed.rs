@@ -1,5 +1,4 @@
-use crate::buf::fixed::FixedBuf;
-use crate::buf::BoundedBufMut;
+use crate::buf::BoundedBufFixedMut;
 use crate::io::SharedFd;
 use crate::runtime::driver::op::{self, Completable, Op};
 use crate::BufResult;
@@ -17,10 +16,7 @@ pub(crate) struct ReadFixed<T> {
     buf: T,
 }
 
-impl<T> Op<ReadFixed<T>>
-where
-    T: BoundedBufMut<BufMut = FixedBuf>,
-{
+impl<T: BoundedBufFixedMut> Op<ReadFixed<T>> {
     pub(crate) fn read_fixed_at(
         fd: &SharedFd,
         buf: T,
@@ -48,10 +44,7 @@ where
     }
 }
 
-impl<T> Completable for ReadFixed<T>
-where
-    T: BoundedBufMut<BufMut = FixedBuf>,
-{
+impl<T: BoundedBufFixedMut> Completable for ReadFixed<T> {
     type Output = BufResult<usize, T>;
 
     fn complete(self, cqe: op::CqeResult) -> Self::Output {

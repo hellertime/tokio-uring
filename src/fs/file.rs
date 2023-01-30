@@ -1,5 +1,7 @@
-use crate::buf::fixed::FixedBuf;
-use crate::buf::{BoundedBuf, BoundedBufMut, IoBuf, IoBufMut, Slice};
+use crate::buf::{
+    BoundedBuf, BoundedBufFixed, BoundedBufFixedMut, BoundedBufMut, IoBuf, IoBufFixed, IoBufMut,
+    Slice,
+};
 use crate::fs::OpenOptions;
 use crate::io::SharedFd;
 
@@ -430,10 +432,11 @@ impl File {
     /// })
     ///# }
     /// ```
-    pub async fn read_fixed_at<T>(&self, buf: T, pos: u64) -> crate::BufResult<usize, T>
-    where
-        T: BoundedBufMut<BufMut = FixedBuf>,
-    {
+    pub async fn read_fixed_at<T: BoundedBufFixedMut>(
+        &self,
+        buf: T,
+        pos: u64,
+    ) -> crate::BufResult<usize, T> {
         // Submit the read operation
         let op = Op::read_fixed_at(&self.fd, buf, pos).unwrap();
         op.await
@@ -624,10 +627,11 @@ impl File {
     /// })
     ///# }
     /// ```
-    pub async fn write_fixed_at<T>(&self, buf: T, pos: u64) -> crate::BufResult<usize, T>
-    where
-        T: BoundedBuf<Buf = FixedBuf>,
-    {
+    pub async fn write_fixed_at<T: BoundedBufFixed>(
+        &self,
+        buf: T,
+        pos: u64,
+    ) -> crate::BufResult<usize, T> {
         let op = Op::write_fixed_at(&self.fd, buf, pos).unwrap();
         op.await
     }
@@ -651,20 +655,21 @@ impl File {
     /// This function will return the first error that [`write_fixed_at`] returns.
     ///
     /// [`write_fixed_at`]: Self::write_fixed_at
-    pub async fn write_fixed_all_at<T>(&self, buf: T, pos: u64) -> crate::BufResult<(), T>
-    where
-        T: BoundedBuf<Buf = FixedBuf>,
-    {
+    pub async fn write_fixed_all_at<T: BoundedBufFixed>(
+        &self,
+        buf: T,
+        pos: u64,
+    ) -> crate::BufResult<(), T> {
         let orig_bounds = buf.bounds();
         let (res, buf) = self.write_fixed_all_at_slice(buf.slice_full(), pos).await;
         (res, T::from_buf_bounds(buf, orig_bounds))
     }
 
-    async fn write_fixed_all_at_slice(
+    async fn write_fixed_all_at_slice<T: IoBufFixed>(
         &self,
-        mut buf: Slice<FixedBuf>,
+        mut buf: Slice<T>,
         mut pos: u64,
-    ) -> crate::BufResult<(), FixedBuf> {
+    ) -> crate::BufResult<(), T> {
         if pos.checked_add(buf.bytes_init() as u64).is_none() {
             return (
                 Err(io::Error::new(

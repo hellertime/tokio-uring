@@ -1,4 +1,7 @@
-use super::{BoundedBuf, BoundedBufMut, IoBuf, IoBufMut};
+use super::bounded::BoundedBufFixedMut;
+use super::{
+    BoundedBuf, BoundedBufFixed, BoundedBufMut, IoBuf, IoBufFixed, IoBufFixedMut, IoBufMut,
+};
 
 use std::cmp;
 use std::ops;
@@ -208,6 +211,14 @@ impl<T: IoBuf> BoundedBuf for Slice<T> {
     }
 }
 
+impl<T: IoBufFixed> BoundedBufFixed for Slice<T> {
+    type BufFixed = T;
+
+    fn buf_index(&self) -> u16 {
+        self.buf.buf_index()
+    }
+}
+
 impl<T: IoBufMut> BoundedBufMut for Slice<T> {
     type BufMut = T;
 
@@ -217,5 +228,17 @@ impl<T: IoBufMut> BoundedBufMut for Slice<T> {
 
     unsafe fn set_init(&mut self, pos: usize) {
         self.buf.set_init(self.begin + pos);
+    }
+}
+
+impl<T: IoBufFixedMut> BoundedBufFixedMut for Slice<T> {
+    type BufFixedMut = T;
+
+    unsafe fn set_buf_index(&mut self, index: u16) {
+        self.buf.set_buf_index(index)
+    }
+
+    fn buf_index(&self) -> u16 {
+        self.buf.buf_index()
     }
 }

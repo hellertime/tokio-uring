@@ -1,5 +1,4 @@
-use crate::buf::fixed::FixedBuf;
-use crate::buf::BoundedBuf;
+use crate::buf::BoundedBufFixed;
 use crate::io::SharedFd;
 use crate::runtime::driver::op::{self, Completable, Op};
 use crate::BufResult;
@@ -16,10 +15,7 @@ pub(crate) struct WriteFixed<T> {
     buf: T,
 }
 
-impl<T> Op<WriteFixed<T>>
-where
-    T: BoundedBuf<Buf = FixedBuf>,
-{
+impl<T: BoundedBufFixed> Op<WriteFixed<T>> {
     pub(crate) fn write_fixed_at(
         fd: &SharedFd,
         buf: T,

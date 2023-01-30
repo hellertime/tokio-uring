@@ -1,4 +1,5 @@
-use super::{IoBuf, IoBufMut, Slice};
+use super::IoBufFixed;
+use super::{IoBuf, IoBufFixedMut, IoBufMut, Slice};
 
 use std::ops;
 use std::ptr;
@@ -133,6 +134,34 @@ impl<T: IoBuf> BoundedBuf for T {
     }
 }
 
+/// A possibly bounded view into an registered, owned [`IoBuf`] buffer.
+///
+/// Because buffers are passed by ownership to the runtime, Rust's slice API
+/// (`&buf[..]`) cannot be used. Instead, `tokio-uring` provides an owned slice
+/// API: [`.slice()`]. The method takes ownership of the buffer and returns a
+/// [`Slice`] value that tracks the requested range.
+///
+/// This trait provides a generic way to use registered buffers and `Slice` views
+/// into such buffers with fixed `io-uring` operations.
+///
+/// [`.slice()`]: BoundedBuf::slice
+pub trait BoundedBufFixed: BoundedBuf<Buf = Self::BufFixed> {
+    /// The type of the underlying buffer.
+    type BufFixed: IoBufFixed;
+
+    /// Forwards to [`IoBufFixed::buf_index`],
+    /// even if the position is offset to the views starting position, it will still retain the same index.
+    fn buf_index(&self) -> u16;
+}
+
+impl<T: IoBufFixed> BoundedBufFixed for T {
+    type BufFixed = T;
+
+    fn buf_index(&self) -> u16 {
+        IoBufFixed::buf_index(self)
+    }
+}
+
 /// A possibly bounded view into an owned [`IoBufMut`] buffer.
 ///
 /// This trait provides a generic way to use mutable buffers and `Slice` views
@@ -187,5 +216,39 @@ impl<T: IoBufMut> BoundedBufMut for T {
 
     unsafe fn set_init(&mut self, pos: usize) {
         IoBufMut::set_init(self, pos)
+    }
+}
+
+/// A possibly bounded view into a owned [`IoBufFixedMut`] buffer.
+///
+/// This trait provides a generic way to use mutable, registered buffers and `Slice` views
+/// into such buffers with fixed `io-uring` operations.
+pub trait BoundedBufFixedMut: BoundedBufMut<BufMut = Self::BufFixedMut> {
+    /// The type of the underlying buffer
+    type BufFixedMut: IoBufFixedMut;
+
+    /// Forwards to [`IoBufFixedMut::set_buf_index`],
+    /// even if the position is offset to the views starting position, it will still retain the same index.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure this index is correctly associated with the buffer, for
+    /// the `tokio-uring` runtime where the `IoBufFixedMut` is being used.
+    unsafe fn set_buf_index(&mut self, index: u16);
+
+    /// Forwards to [`IoBufFixedMut::buf_index`],
+    /// even if the position is offset to the views starting position, it will still retain the same index.
+    fn buf_index(&self) -> u16;
+}
+
+impl<T: IoBufFixedMut> BoundedBufFixedMut for T {
+    type BufFixedMut = T;
+
+    unsafe fn set_buf_index(&mut self, index: u16) {
+        IoBufFixedMut::set_buf_index(self, index)
+    }
+
+    fn buf_index(&self) -> u16 {
+        IoBufFixedMut::buf_index(self)
     }
 }
