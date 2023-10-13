@@ -33,10 +33,9 @@ impl<T: BoundedBuf> Op<Writev<T>> {
             })
             .collect();
 
-        println!("SUBMITTING WRITEV");
         for iov in &iovs {
             let slice = unsafe { std::slice::from_raw_parts(iov.iov_base as *const u8, iov.iov_len) };
-            println!("WRITEV: {:?}", slice);
+            println!("WRITEV (offset={}): {:?}", offset, slice);
         }
 
         CONTEXT.with(|x| {
