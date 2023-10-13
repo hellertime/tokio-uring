@@ -33,6 +33,11 @@ impl<T: BoundedBuf> Op<Writev<T>> {
             })
             .collect();
 
+        for iov in iovs {
+            let slice = unsafe { std::slice::from_raw_parts(iov.iov_base as *const u8, iov.iov_len) };
+            println!("WRITEV: {:?}");
+        }
+
         CONTEXT.with(|x| {
             x.handle().expect("Not in a runtime context").submit_op(
                 Writev {
