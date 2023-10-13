@@ -33,7 +33,7 @@ impl<T: BoundedBuf> Op<Writev<T>> {
             })
             .collect();
 
-        for iov in iovs {
+        for iov in iovs.iter() {
             let slice = unsafe { std::slice::from_raw_parts(iov.iov_base as *const u8, iov.iov_len) };
             println!("WRITEV: {:?}");
         }
