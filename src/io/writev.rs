@@ -35,7 +35,7 @@ impl<T: BoundedBuf> Op<Writev<T>> {
 
         for iov in &iovs {
             let slice = unsafe { std::slice::from_raw_parts(iov.iov_base as *const u8, iov.iov_len) };
-            println!("WRITEV: {:?}");
+            println!("WRITEV: {:?}", slice);
         }
 
         CONTEXT.with(|x| {
